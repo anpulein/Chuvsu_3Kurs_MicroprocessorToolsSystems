@@ -1,0 +1,183 @@
+Turbo Assembler	 Version 5.0	    03-15-23 14:10:33	    Page 1
+code.asm
+
+
+
+      1					 include console.inc
+1     2					 includelib import32.lib
+1     3					 ; имена используемых функций из kernel32.dll
+1     4					  extrn	ExitProcess:near
+1     5					  extrn	WriteConsoleA:near
+1     6					  extrn	GetStdHandle:near
+1     7					  extrn	_wsprintfA:near
+1     8
+1     9					 ; присваивания для облегчения	читаемости кода
+1    10					  WriteConsole equ WriteConsoleA
+1    11					  ReadConsoleInput equ ReadConsoleInputA
+1    12
+1    13					 ; определения констант и типов
+1    14		  =-000B		 STD_OUTPUT_HANDLE equ -11
+1    15
+     16					 .386
+     17	00000000			 .model	FLAT,STDCALL
+     18
+     19					 ; Объявления	данных
+     20	00000000			 .data
+     21	00000000  19AB				 num8 dw 6571
+     22	00000002  0000				 num10 dw 0
+     23	00000004  0008				 base dw 8
+     24	00000006  0001				 weight	dw 1
+     25	00000008  000A				 number	dw 10
+     26	0000000A  ????				 check dw ?
+     27	0000000C  ????????			 result	dd ?
+     28	00000010  0000				 zero dw 0
+     29	00000012  FFFF				 lenWord dw 1111111111111111b
+     30	00000014  ????????		     OUT dd ?
+*Warning* code.asm(16) Reserved	word used as symbol: OUT
+     31	00000018  ????????			 real dd ?
+     32	0000001C  14*(00)			 message db 20 dup (0)
+     33	00000030  52 65	73 75 6C 74 20+		 msg db	"Result	%d ", 0
+     34		  25 64	20 00
+     35
+     36
+     37
+     38					 ; Программа
+     39	0000003B			 .code
+     40	00000000			 _start:
+     41					     call GetStdHandle,	STD_OUTPUT_HANDLE
+1    42	00000000  6A F5				 PUSH	 STD_OUTPUT_HANDLE
+1    43	00000002  E8 00000000e			 CALL	 GetStdHandle
+     44	00000007  A3 00000014r		     mov OUT, eax
+     45
+     46						 ; вычисления
+     47	0000000C  9B DB	E3			 finit			 ; инициализация сопроцессора
+     48	0000000F  D9 2D	00000012r		 fldcw lenWord
+     49
+     50						 ; Стек данных
+     51
+     52	00000015  DF 05	00000008r		 fild number	 ; st(7)
+     53	0000001B  DF 05	00000004r		 fild base	 ; st(6)
+     54	00000021  DF 05	00000006r		 fild weight	 ; st(5)
+     55	00000027  DF 05	00000002r		 fild num10	 ; st(4)
+     56	0000002D  DF 05	00000000r		 fild num8	 ; st(3)
+Turbo Assembler	 Version 5.0	    03-15-23 14:10:33	    Page 2
+code.asm
+
+
+
+     57	00000033  D9 EE				 fldz		 ; st(2)
+     58	00000035  D9 EE				 fldz		 ; st(1)
+     59	00000037  D9 EE				 fldz		 ; st(0)
+     60
+     61	00000039			 processing:
+     62	00000039  DE 0D	00000010r		 fimul zero
+     63	0000003F  D8 C7				 fadd st, st(7)
+     64	00000041  D9 C9				 fxch st(1)
+     65	00000043  DE 0D	00000010r		 fimul zero
+     66	00000049  D8 C3				 fadd st, st(3)	; st(0)	= число, st(1) = 10
+     67	0000004B  D9 F8				 fprem			 ; st(0) = число mod 10 =>	число
+     68	0000004D  D8 CD				 fmul st, st(5)	 ; st(0)
+     69	0000004F  D8 C4				 fadd st, st(4)	 ; st(0)
+     70	00000051  DD D4				 fst st(4)		 ; st(4)
+     71						 ;-----------------------------
+     72	00000053  DE 0D	00000010r		 fimul zero
+     73	00000059  D8 C5				 fadd st, st(5)	 ; st(0)
+     74	0000005B  D8 CE				 fmul st, st(6)	 ; st(0)
+     75	0000005D  DD D5				 fst st(5)		 ; st(5)
+     76						 ;-----------------------------
+     77	0000005F  DE 0D	00000010r		 fimul zero
+     78	00000065  D8 C3				 fadd st, st(3)	 ; st(0) = число
+     79	00000067  DE 35	00000008r		 fidiv number	 ; st(0) = число div 10 =>	следующая итерация
+     80	0000006D  D9 FC				 FRNDINT		 ; округляю число
+     81	0000006F  DD D3				 fst st(3)
+     82						 ;-----------------------------
+     83	00000071  DF 15	0000000Ar		 fist check		 ; число div 10
+     84	00000077  66| 83 3D 0000000Ar +		 cmp check, 0
+     85		  00
+     86	0000007F  75 B8				 jne processing	 ; если check != 0
+     87
+     88						 ; обработка завершена
+     89						 ; Результат
+     90	00000081  DE 0D	00000010r		 fimul zero
+     91	00000087  D8 C4				 fadd st, st(4)	 ; st(0) = результат
+     92	00000089  DB 15	0000000Cr		 fist result		 ; result = st(0)
+     93
+     94	0000008F  DB E3				 fninit
+     95
+     96						 call _wsprintfA, offset message, offset msg, result
+1    97	00000091  FF 35	0000000Cr		 PUSH	 result
+1    98	00000097  68 00000030r			 PUSH	 offset	msg
+1    99	0000009C  68 0000001Cr			 PUSH	 offset	message
+1   100	000000A1  E8 00000000e			 CALL	 _wsprintfA
+    101						 call WriteConsole, OUT, offset	message, 20, offset real, 0
+1   102	000000A6  6A 00				 PUSH	 0
+1   103	000000A8  68 00000018r			 PUSH	 offset	real
+1   104	000000AD  6A 14				 PUSH	 20
+1   105	000000AF  68 0000001Cr			 PUSH	 offset	message
+1   106	000000B4  FF 35	00000014r		 PUSH	 OUT
+1   107	000000BA  E8 00000000e			 CALL	 WriteConsoleA
+    108
+    109						 call ExitProcess,0
+1   110	000000BF  6A 00				 PUSH	 0
+1   111	000000C1  E8 00000000e			 CALL	 ExitProcess
+    112					 end _start
+Turbo Assembler	 Version 5.0	    03-15-23 14:10:33	    Page 3
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??date				  Text	 "03-15-23"
+??filename			  Text	 "code	  "
+??time				  Text	 "14:10:33"
+??version			  Number 0500
+@32Bit				  Text	 1
+@CodeSize			  Text	 0
+@Cpu				  Text	 0F0FH
+@DataSize			  Text	 0
+@FileName			  Text	 code
+@Interface			  Text	 003h
+@Model				  Text	 1
+@WordSize			  Text	 4
+@code				  Text	 FLAT
+@curseg				  Text	 _TEXT
+@data				  Text	 FLAT
+@stack				  Text	 FLAT
+ExitProcess			  Near16 ----:---- Extern
+GetStdHandle			  Near16 ----:---- Extern
+OUT				  Dword	 FLAT:0014
+ReadConsoleInput		  Alias	 ReadConsoleInputA
+STD_OUTPUT_HANDLE		  Number -000B
+WriteConsole			  Alias	 WriteConsoleA
+WriteConsoleA			  Near16 ----:---- Extern
+_start				  Near32 FLAT:0000
+_wsprintfA			  Near16 ----:---- Extern
+base				  Word	 FLAT:0004
+check				  Word	 FLAT:000A
+lenWord				  Word	 FLAT:0012
+message				  Byte	 FLAT:001C
+msg				  Byte	 FLAT:0030
+num10				  Word	 FLAT:0002
+num8				  Word	 FLAT:0000
+number				  Word	 FLAT:0008
+processing			  Near32 FLAT:0039
+real				  Dword	 FLAT:0018
+result				  Dword	 FLAT:000C
+weight				  Word	 FLAT:0006
+zero				  Word	 FLAT:0010
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  32  003B Dword  Public  DATA
+FLAT				  Group
+_TEXT				  32  00C6 Dword  Public  CODE
+Turbo Assembler	 Version 5.0	    03-15-23 14:10:33	    Page 4
+Error Summary
+
+
+
+*Warning* code.asm(16) Reserved	word used as symbol: OUT
+

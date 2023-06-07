@@ -1,0 +1,118 @@
+Turbo Assembler	 Version 5.0	    04-13-23 14:04:22	    Page 1
+code.asm
+
+
+
+      1					 includelib import32.lib
+      2						 extrn ExitProcess:near
+      3						 extrn GetStdHandle:near
+      4
+      5
+      6					 .386
+      7	00000000			 .model	FLAT,STDCALL
+      8
+      9	00000000			 .data
+     10	00000000  00000001			 a1 dd 1;
+     11	00000004  00000002			 a2 dd 2;
+     12	00000008  00000000			 res_a dd 0
+     13
+     14	0000000C  00000001			 s1 dd 1;
+     15	00000010  00000002			 s2 dd 2;
+     16	00000014  00000000			 res_s dd 0
+     17
+     18	00000018  00000001			 m1 dd 1;
+     19	0000001C  00000002			 m2 dd 2;
+     20	00000020  00000000			 res_m dd 0
+     21
+     22
+     23		  =-000B			 STD_OUTPUT_HANDLE equ -11
+     24	00000024  ????????			 hout dd ?
+     25	00000028  0A*(00)			 outBuffer db 10 dup(0)
+     26
+     27	00000032			 .data?
+     28
+     29	00000000			 .code
+     30	00000000			 _start:
+     31	00000000  9B DB	E3			 finit
+     32
+     33						 ; Загрузка операндов в регистры сопроцессора
+     34	00000003  D9 05	00000000r		 fld a1
+     35	00000009  D9 05	00000004r		 fld a2
+     36						 ; Сложение операндов
+     37	0000000F  DE C1				 faddp st(1), st(0)
+     38						 ; Сохранение	результата
+     39	00000011  D9 1D	00000008r		 fstp res_a
+     40
+     41						 ; Загрузка операндов в регистры сопроцессора
+     42	00000017  D9 05	0000000Cr		 fld s1
+     43	0000001D  D9 05	00000010r		 fld s2
+     44						 ; Вычитание операндов
+     45	00000023  DE E9				 fsubp st(1), st(0)
+     46						 ; Сохранение	результата
+     47	00000025  D9 1D	00000014r		 fstp res_s
+     48
+     49						 ; Загрузка операндов в регистры сопроцессора
+     50	0000002B  D9 05	00000018r		 fld m1
+     51	00000031  D9 05	0000001Cr		 fld m2
+     52						 ; Умножение операндов
+     53	00000037  DE C9				 fmulp st(1), st(0)
+     54						 ; Сохранение	результата
+     55	00000039  D9 1D	00000020r		 fstp res_m
+     56
+     57						 call ExitProcess, 0
+Turbo Assembler	 Version 5.0	    04-13-23 14:04:22	    Page 2
+code.asm
+
+
+
+1    58	0000003F  6A 00				 PUSH	 0
+1    59	00000041  E8 00000000e			 CALL	 ExitProcess
+     60					  end _start
+Turbo Assembler	 Version 5.0	    04-13-23 14:04:22	    Page 3
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??date				  Text	 "04-13-23"
+??filename			  Text	 "code	  "
+??time				  Text	 "14:04:22"
+??version			  Number 0500
+@32Bit				  Text	 1
+@CodeSize			  Text	 0
+@Cpu				  Text	 0F0FH
+@DataSize			  Text	 0
+@FileName			  Text	 code
+@Interface			  Text	 003h
+@Model				  Text	 1
+@WordSize			  Text	 4
+@code				  Text	 FLAT
+@curseg				  Text	 _TEXT
+@data				  Text	 FLAT
+@stack				  Text	 FLAT
+ExitProcess			  Near16 ----:---- Extern
+GetStdHandle			  Near16 ----:---- Extern
+STD_OUTPUT_HANDLE		  Number -000B
+_start				  Near32 FLAT:0000
+a1				  Dword	 FLAT:0000
+a2				  Dword	 FLAT:0004
+hout				  Dword	 FLAT:0024
+m1				  Dword	 FLAT:0018
+m2				  Dword	 FLAT:001C
+outBuffer			  Byte	 FLAT:0028
+res_a				  Dword	 FLAT:0008
+res_m				  Dword	 FLAT:0020
+res_s				  Dword	 FLAT:0014
+s1				  Dword	 FLAT:000C
+s2				  Dword	 FLAT:0010
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _BSS				  32  0000 Dword  Public  BSS
+  _DATA				  32  0032 Dword  Public  DATA
+FLAT				  Group
+_TEXT				  32  0046 Dword  Public  CODE
+
